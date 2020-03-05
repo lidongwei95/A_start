@@ -3,6 +3,11 @@
 import time
 import sys
 
-if sys.argv[1] != None:
-    time.sleep(3)
-    print("Hello World!")
+def if_else():
+    if sys.argv[1] != None:
+        time.sleep(3)
+        print("Hello World!")
+
+if __name__ == "__main__":
+    if_else()
+        
