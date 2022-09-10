@@ -1,8 +1,59 @@
+import random
 import pygame
 from pygame.constants import *
 import time
 
+
+
 image_path = "/home/dongweili/Pictures/"
+
+
+class EnemyPlane(object):
+    # 初始化属性
+    def __init__(self, screen):
+        # 创建一个图片，玩家的飞机
+        self.player = pygame.image.load(image_path + "enemy01.png") # 95 * 90
+
+        self.x = 0
+        self.y = 0
+
+        # 飞机速度
+        self.speed = 5
+        # 记录当前窗口对向
+        self.screen = screen
+        # 装子弹列表
+        self.bullets = []
+        # 敌机移动方向
+        self.direction = "right"
+
+
+    def display(self):
+        # 将主飞机图片贴到窗口中
+        self.screen.blit(self.player, (self.x, self.y))
+        # # 遍历所有子弹
+        for bullet in self.bullets:
+            # 让子弹飞 修改子弹y坐标
+            bullet.auto_move()
+            # 子弹显示在窗口
+            bullet.display()
+
+    def auto_move(self):
+        if self.direction == "right":
+            self.x += self.speed
+        elif self.direction == "left":
+            self.x -= self.speed
+
+        if self.x > 480 - 95:
+            self.direction = "left"
+        elif self.x < 0:
+            self.direction = "right"
+
+    def auto_fire(self):
+        """自动开火，创建子弹对向，添加进列表"""
+        random_num = random.randint(1, 20)
+        if random_num == 8:
+            bullet = EnemyBullet(self.screen, self.x, self.y)
+            self.bullets.append(bullet)
 
 
 class HeroPlane(object):
@@ -75,6 +126,30 @@ class Bullet(object):
         """让子弹飞"""
         self.y -= self.speed
 
+
+# 子弹类
+# 属性
+class EnemyBullet(object):
+    def __init__(self, screen, x, y):
+        # 坐标
+        self.x = x + 94 / 2 - 20 / 2  
+        self.y = y + 30
+        # 图片
+        self.image = pygame.image.load(image_path + "bullet01.png") # 20 * 30
+        # 窗口
+        self.screen = screen
+        # 速度
+        self.speed = 10
+
+    def display(self):
+        """显示子弹到窗口"""
+        self.screen.blit(self.image, (self.x, self.y))
+
+    def auto_move(self):
+        """让子弹飞"""
+        self.y += self.speed
+
+
 # 完成整个程序的控制
 def main():
 
@@ -82,10 +157,10 @@ def main():
     screen = pygame.display.set_mode((480,852),0,32)
     # 2. 创建一个图片做背景
     background = pygame.image.load(image_path + "beijing01.png")
-
+    # 创建一个飞机对向，注意不要忘记传窗口
     player = HeroPlane(screen)
-
-
+    # 创建一个敌方飞机对象，注意不要忘记传窗口
+    enemyplane = EnemyPlane(screen)
 
     # 让屏幕一直显示在窗口
     while True:
@@ -105,6 +180,12 @@ def main():
         player.key_control()
         # 飞机的显示
         player.display()
+        # 敌方飞机显示
+        enemyplane.display()
+        # 敌方自动移动
+        enemyplane.auto_move()
+        # 敌方自动开火
+        enemyplane.auto_fire()
 
         # 4. 显示窗口中的内容
         pygame.display.update()
