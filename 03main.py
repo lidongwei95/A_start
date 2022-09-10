@@ -1,4 +1,6 @@
+from multiprocessing import managers
 import random
+from select import select
 import pygame
 from pygame.constants import *
 import time
@@ -46,9 +48,9 @@ class EnemyPlane(pygame.sprite.Sprite):
         elif self.direction == "left":
             self.rect.right -= self.speed
 
-        if self.rect.right > 480 - 95:
+        if self.rect.right > 480:
             self.direction = "left"
-        elif self.rect.right < 0:
+        elif self.rect.right < 95:
             self.direction = "right"
 
     def auto_fire(self):
@@ -180,57 +182,139 @@ class GameSound(object):
         pygame.mixer.music.load(image_path + "sound.ogg") # 加载音乐
         pygame.mixer.music.set_volume(0.5)  # 设置音量
 
+        self.__bomb = pygame.mixer.Sound(image_path + "bomb.wav") 
+
     def playBackgroundMusic(self):
         pygame.mixer.music.play(-1)  # 开始播放音乐  -1无限循环   2两遍
+    
+    def playBombSound(self):
+        pygame.mixer.Sound.play(self.__bomb)  # 爆炸音乐
 
 
-# 完成整个程序的控制
-def main():
+# 碰撞类
+class Bomb(object):
+    # 初始化爆炸
+    def __init__(self, screen, type):
+        self.screen = screen
 
-    # 播放音乐
-    sound = GameSound()
-    sound.playBackgroundMusic()
+        if type == "enemy":
+            # 加载爆炸资源
+            self.mImages = [
+                pygame.image.load(image_path + "enemyboom" + str(v) + ".png") for v in range(1,5)
+            ]
+        else:
+            self.mImages = [
+                pygame.image.load(image_path + "heroboom" + str(v) + ".png") for v in range(1,5)
+            ]
 
-    # 1. 创建一个窗口
-    screen = pygame.display.set_mode((480,852),0,32)
-    # 2. 创建一个图片做背景
-    background = pygame.image.load(image_path + "beijing01.png")
-    # 创建一个飞机对向，注意不要忘记传窗口
-    player = HeroPlane(screen)
-    # 创建一个敌方飞机对象，注意不要忘记传窗口
-    enemyplane = EnemyPlane(screen)
+        # 设置当前爆炸播放缩阴
+        self.mIndex = 0
+        # 爆炸位置
+        self.mPos = [0,0]
+        # 是否可见
+        self.mVisible = False
 
-    # 让屏幕一直显示在窗口
-    while True:
-        # 3. 将背景图片贴到窗口中
-        screen.blit(background, (0,0))
+    def action(self, rect):
+        # 触发爆炸方法draw
 
-        # 获取事件
-        for event in pygame.event.get():
-            # 判断事件类型
-            if event.type == pygame.QUIT:
-                # 执行pygame退出
-                pygame.quit()
-                # python程序退出
-                exit()
+        #爆炸坐标
+        self.mPos[0] = rect.left
+        self.mPos[1] = rect.top
+        # 打开爆炸的开关
+        self.mVisible = True
 
-        # 执行飞机按键监听
-        player.key_control()
-        # 飞机的显示
-        player.display()
-        # 敌方飞机显示
-        enemyplane.display()
-        # 敌方自动移动
-        enemyplane.auto_move()
-        # 敌方自动开火
-        enemyplane.auto_fire()
+    # 绘制爆炸
+    def draw(self):
+        if not self.mVisible:
+            return
+        self.screen.blit(self.mImages[self.mIndex], (self.mPos[0], self.mPos[1]))
+        self.mIndex += 1
+        if self.mIndex >= len(self.mImages):
+            # 如果下表已经到最后，代表爆炸结束
+            # 下标重置 mVisible重置
+            self.mIndex = 0
+            self.mVisible = False
 
-        # 4. 显示窗口中的内容
-        pygame.display.update()
-        time.sleep(0.01)
+class Manager(object):
+    def __init__(self):
+        # 创建窗口
+        self.screen = pygame.display.set_mode((480,852),0,32)
+        # 创建图片背景
+        self.background = pygame.image.load(image_path + "beijing01.png")
+        # 初始化一个玩家装精灵的group
+        self.players = pygame.sprite.Group()
+        # 初始化一个装敌机精灵的group
+        self.enemys = pygame.sprite.Group()
+        # 初始化一个玩家爆炸的对象
+        self.players_bomb = Bomb(self.screen, "player")
+        # 初始化一个敌机爆炸的对象
+        self.enemys_bomb = Bomb(self.screen, "enemy")
+        # 初始化一个声音播放的对象
+        self.sound = GameSound()
 
+    def exit(self):
+        """退出程序"""
+        print("exit")
+        pygame.quit()
+        exit()
+
+    def new_player(self):
+        """创建飞机对象，添加到玩家的组"""
+        player = HeroPlane(self.screen)
+        self.players.add(player)
+
+    def new_enemy(self):
+        """创建敌机的对象，添加到敌机的组"""
+        enemy = EnemyPlane(self.screen)
+        self.enemys.add(enemy)
+
+    def main(self):
+        # 播放背景音乐
+        self.sound.playBackgroundMusic()
+        # 创建一个玩家
+        self.new_player()
+        # 创建一个敌机
+        self.new_enemy()
+        
+        # 让屏幕一直显示在窗口
+        while True:
+            # 3. 将背景图片贴到窗口中
+            self.screen.blit(self.background, (0,0))
+            # 获取事件
+            for event in pygame.event.get():
+                # 判断事件类型
+                if event.type == pygame.QUIT:
+                    self.exit()
+
+            # 调用爆炸的对象
+            self.players_bomb.draw()
+            self.enemys_bomb.draw()
+
+            # 判断碰撞
+            iscollide = pygame.sprite.groupcollide(self.players, self.enemys, True, True)  # 接收玩家和敌机，都为True时将两个都消除
+            if iscollide:
+                items = list(iscollide.items())[0]
+                print(items)
+                x = items[0]
+                y = items[1][0] 
+                # 玩家爆炸图片
+                self.players_bomb.action(x.rect)
+                # 敌机爆炸图片
+                self.enemys_bomb.action(x.rect)
+                # 爆炸声音
+                self.sound.playBombSound()
+
+
+            # 玩家飞机子弹显示
+            self.players.update()
+            # 敌机和子弹显示
+            self.enemys.update()
+            # 刷新窗口内容
+            pygame.display.update()
+            time.sleep(0.01)
 
 
 # 主函数
 if __name__ == '__main__':
-    main()
+    manager = Manager()
+    manager.main()
