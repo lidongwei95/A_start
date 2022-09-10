@@ -150,8 +150,23 @@ class EnemyBullet(object):
         self.y += self.speed
 
 
+# 创建背景音乐
+class GameSound(object):
+    def __init__(self) -> None:
+        pygame.mixer.init() # 音乐模块初始化
+        pygame.mixer.music.load(image_path + "sound.ogg") # 加载音乐
+        pygame.mixer.music.set_volume(0.5)  # 设置音量
+
+    def playBackgroundMusic(self):
+        pygame.mixer.music.play(-1)  # 开始播放音乐  -1无限循环   2两遍
+
+
 # 完成整个程序的控制
 def main():
+
+    # 播放音乐
+    sound = GameSound()
+    sound.playBackgroundMusic()
 
     # 1. 创建一个窗口
     screen = pygame.display.set_mode((480,852),0,32)
