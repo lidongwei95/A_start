@@ -21,7 +21,8 @@ class EnemyPlane(pygame.sprite.Sprite):
 
         # 根据图片iamge获取矩形对象
         self.rect = self.player.get_rect()  # rect: 矩形
-        self.rect.topleft = [0, 0]  # 确定矩形左上坐标位置
+        x = random.randrange(1, Manager.bg_size[0], 50)  # 生成位置
+        self.rect.topleft = [x, 0]  # 确定矩形左上坐标位置
 
 
         # 飞机速度
@@ -53,6 +54,8 @@ class EnemyPlane(pygame.sprite.Sprite):
             self.direction = "left"
         elif self.rect.right < 95:
             self.direction = "right"
+        
+        self.rect.bottom += self.speed
 
     def auto_fire(self):
         """自动开火，创建子弹对向，添加进列表"""
@@ -273,6 +276,8 @@ class GameBackGround(object):
 class Manager(object):
     # 背景像素
     bg_size = (480,852)
+    # 创建敌机定时器ID
+    create_enemy_id = 10
     # 游戏结束倒计时的ID
     game_over_id = 11  # 1~32中任意数
     # 游戏是否结束
@@ -331,9 +336,8 @@ class Manager(object):
         self.sound.playBackgroundMusic()
         # 创建一个玩家
         self.new_player()
-        # 创建一个敌机
-        self.new_enemy()
-
+        # 开启创建敌机的定时器
+        pygame.time.set_timer(Manager.create_enemy_id, 1000)  # 每隔1000ms自动创建敌机对象
 
         # 让屏幕一直显示在窗口
         while True:
@@ -351,6 +355,9 @@ class Manager(object):
                 # 判断事件类型
                 if event.type == pygame.QUIT:
                     self.exit()
+                elif event.type == Manager.create_enemy_id:
+                    # 创建一个敌机
+                    self.new_enemy()
 
             # 调用爆炸的对象
             self.players_bomb.draw()
