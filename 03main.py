@@ -10,7 +10,8 @@ image_path = "/home/dongweili/Pictures/"
 
 
 class EnemyPlane(pygame.sprite.Sprite):
-    # 初始化属性
+    # 存放所有飞机子弹的组
+    enemy_bullets = pygame.sprite.Group()     # 初始化属性
     def __init__(self, screen):
         # 这个精灵的初始化方法，必须调用
         pygame.sprite.Sprite.__init__(self)
@@ -55,10 +56,13 @@ class EnemyPlane(pygame.sprite.Sprite):
 
     def auto_fire(self):
         """自动开火，创建子弹对向，添加进列表"""
-        random_num = random.randint(1, 20)
+        random_num = random.randint(1, 50)
         if random_num == 8:
             bullet = EnemyBullet(self.screen, self.rect.left, self.rect.top)
             self.bullets.add(bullet)
+            # 存放所有飞机子弹的组
+            EnemyPlane.enemy_bullets.add(bullet)
+
 
     def update(self):
         self.display()
@@ -67,6 +71,8 @@ class EnemyPlane(pygame.sprite.Sprite):
 
 
 class HeroPlane(pygame.sprite.Sprite):
+    # 存放所有飞机子弹的组
+    player_bullets = pygame.sprite.Group() 
     # 初始化属性
     def __init__(self, screen):
         # 这个精灵的初始化方法，必须调用
@@ -108,6 +114,8 @@ class HeroPlane(pygame.sprite.Sprite):
             bullet = Bullet(self.screen, self.rect.left, self.rect.top)
             # 把子弹添加到列表里
             self.bullets.add(bullet)
+            # 存放所有飞机子弹的组
+            HeroPlane.player_bullets.add(bullet)
 
     def display(self):
         # 将主飞机图片贴到窗口中
@@ -140,7 +148,6 @@ class Bullet(pygame.sprite.Sprite):
         self.screen = screen
         # 速度
         self.speed = 10
-
 
     def update(self):
         # 修改子弹坐标
@@ -264,7 +271,12 @@ class GameBackGround(object):
 
 
 class Manager(object):
+    # 背景像素
     bg_size = (480,852)
+    # 游戏结束倒计时的ID
+    game_over_id = 11  # 1~32中任意数
+    # 游戏是否结束
+    is_game_over = False
 
     def __init__(self):
         pygame.init()  # pygame初始方法，避免字体导入出错
@@ -358,6 +370,30 @@ class Manager(object):
                 # 爆炸声音
                 self.sound.playBombSound()
 
+            # 玩家子弹和所有敌机的碰撞判断 (两个精灵组之间的碰撞判断)
+            is_enemy = pygame.sprite.groupcollide(HeroPlane.player_bullets, self.enemys, True, True) 
+            if is_enemy:
+                items = list(is_enemy.items())[0]
+                y = items[1][0] 
+                # # 玩家爆炸图片
+                # self.players_bomb.action(x.rect)
+                # 敌机爆炸图片
+                self.enemys_bomb.action(y.rect)
+                # 爆炸声音
+                self.sound.playBombSound()
+
+            # 敌机子弹和玩家的碰撞判断  （玩家精灵和精灵组之间的碰撞）
+            if self.players.sprites():
+                isover = pygame.sprite.spritecollide(self.players.sprites()[0], EnemyPlane.enemy_bullets, True)
+                if isover:
+                    Manager.is_game_over = True  # 标志游戏结束
+                    pygame.time.set_timer(Manager.game_over_id, 1000)  # 开始游戏倒计时
+                    print("Be killed")
+                    self.players_bomb.action(self.players.sprites()[0].rect)
+                    # 把玩家飞机从精灵组移除
+                    self.players.remove(self.players.sprites()[0])
+                    # 爆炸声音
+                    self.sound.playBombSound()
 
             # 玩家飞机子弹显示
             self.players.update()
