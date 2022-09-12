@@ -48,7 +48,7 @@ class EnemyPlane(pygame.sprite.Sprite):
         elif self.direction == "left":
             self.rect.right -= self.speed
 
-        if self.rect.right > 480:
+        if self.rect.right > Manager.bg_size[0]:
             self.direction = "left"
         elif self.rect.right < 95:
             self.direction = "right"
@@ -77,7 +77,7 @@ class HeroPlane(pygame.sprite.Sprite):
 
         # 根据图片iamge获取矩形对象
         self.rect = self.player.get_rect()  # rect: 矩形
-        self.rect.topleft = [480 / 2 - 100 / 2, 600]  # 确定矩形左上坐标位置
+        self.rect.topleft = [Manager.bg_size[0] / 2 - 100 / 2, 600]  # 确定矩形左上坐标位置
 
 
         # 飞机速度
@@ -170,7 +170,7 @@ class EnemyBullet(pygame.sprite.Sprite):
         # 修改子弹坐标
         self.rect.top += self.speed
         # 如果子弹移出屏幕，则小辉子弹对象
-        if self.rect.top > 852:
+        if self.rect.top > Manager.bg_size[1]:
             self.kill()
 
 
@@ -235,12 +235,44 @@ class Bomb(object):
             self.mIndex = 0
             self.mVisible = False
 
+
+# 地图
+class GameBackGround(object):
+    # 初始化地图
+    def __init__(self, screen):
+        self.mImage1 = pygame.image.load(image_path + "background.png")
+        self.mImage2 = pygame.image.load(image_path + "background.png")
+        # 窗口
+        self.screen = screen
+        # 辅助移动地图
+        self.y1 = 0
+        self.y2 = -Manager.bg_size[1]  # -852
+
+    # 移动地图
+    def move(self):
+        self.y1 += 2
+        self.y2 += 2
+        if self.y1 >= Manager.bg_size[1]:
+            self.y1 = 0
+        if self.y2 >= 0:
+            self.y2 = -Manager.bg_size[1]
+
+    # 绘制地图
+    def draw(self):
+        self.screen.blit(self.mImage1, (0, self.y1))
+        self.screen.blit(self.mImage1, (0, self.y2))
+
+
 class Manager(object):
+    bg_size = (480,852)
+
     def __init__(self):
         # 创建窗口
-        self.screen = pygame.display.set_mode((480,852),0,32)
+        self.screen = pygame.display.set_mode(Manager.bg_size, 0, 32)
         # 创建图片背景
-        self.background = pygame.image.load(image_path + "beijing01.png")
+        # self.background = pygame.image.load(image_path + "beijing01.png")
+        self.map = GameBackGround(self.screen)
+
         # 初始化一个玩家装精灵的group
         self.players = pygame.sprite.Group()
         # 初始化一个装敌机精灵的group
@@ -279,7 +311,12 @@ class Manager(object):
         # 让屏幕一直显示在窗口
         while True:
             # 3. 将背景图片贴到窗口中
-            self.screen.blit(self.background, (0,0))
+            # self.screen.blit(self.background, (0,0))
+            # 移动地图
+            self.map.move()
+            # 把地图贴到窗口上
+            self.map.draw()
+
             # 获取事件
             for event in pygame.event.get():
                 # 判断事件类型
