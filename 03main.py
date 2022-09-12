@@ -267,6 +267,7 @@ class Manager(object):
     bg_size = (480,852)
 
     def __init__(self):
+        pygame.init()  # pygame初始方法，避免字体导入出错
         # 创建窗口
         self.screen = pygame.display.set_mode(Manager.bg_size, 0, 32)
         # 创建图片背景
@@ -300,6 +301,19 @@ class Manager(object):
         enemy = EnemyPlane(self.screen)
         self.enemys.add(enemy)
 
+    def drawText(self, text, x, y, textHeight=30, fontColor=(255,0,0), backgroundColor=None):
+        """绘制文字"""
+        # 通过字体文件获取字体对象
+        font_obj = pygame.font.Font(image_path + "font/velvet.TTF", textHeight)
+        # 配置想要显示的文字
+        text_obj = font_obj.render(text, True, fontColor, backgroundColor)
+        # 获取要显示对向的rect
+        text_rect = text_obj.get_rect()
+        # 设置显示对象的坐标
+        text_rect.topleft = (x, y)
+        # 绘制字到指定区域
+        self.screen.blit(text_obj, text_rect)
+
     def main(self):
         # 播放背景音乐
         self.sound.playBackgroundMusic()
@@ -307,7 +321,8 @@ class Manager(object):
         self.new_player()
         # 创建一个敌机
         self.new_enemy()
-        
+
+
         # 让屏幕一直显示在窗口
         while True:
             # 3. 将背景图片贴到窗口中
@@ -316,6 +331,8 @@ class Manager(object):
             self.map.move()
             # 把地图贴到窗口上
             self.map.draw()
+            # 绘制文字
+            self.drawText("HP:1000", 0, 0)
 
             # 获取事件
             for event in pygame.event.get():
