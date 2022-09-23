@@ -66,11 +66,15 @@ class EnemyPlane(pygame.sprite.Sprite):
             # 存放所有飞机子弹的组
             EnemyPlane.enemy_bullets.add(bullet)
 
-
     def update(self):
         self.display()
         self.auto_fire()
         self.auto_move()
+
+    @classmethod
+    def clear_bullets(cls):
+        # 清空子弹
+        cls.enemy_bullets.empty()
 
 
 class HeroPlane(pygame.sprite.Sprite):
@@ -125,7 +129,6 @@ class HeroPlane(pygame.sprite.Sprite):
         self.screen.blit(self.player, self.rect)
         # 更新子弹坐标
         self.bullets.update()
-
         # 把所有子弹全部添加到屏幕
         self.bullets.draw(self.screen)
 
@@ -133,6 +136,10 @@ class HeroPlane(pygame.sprite.Sprite):
         self.key_control()
         self.display()
 
+    @classmethod
+    def clear_bullets(cls):
+        # 清空子弹
+        cls.player_bullets .empty()
 
 # 子弹类
 # 属性
@@ -282,6 +289,15 @@ class Manager(object):
     game_over_id = 11  # 1~32中任意数
     # 游戏是否结束
     is_game_over = False
+    # 倒计时时间
+    over_time = 3
+
+    def start_game(self):
+        # 重新开始游戏 有些累属性要清空
+        EnemyPlane.clear_bullets()
+        HeroPlane.clear_bullets()
+        manager = Manager()
+        manager.main()
 
     def __init__(self):
         pygame.init()  # pygame初始方法，避免字体导入出错
@@ -307,6 +323,22 @@ class Manager(object):
         print("exit")
         pygame.quit()
         exit()
+
+    def show_over_text(self):
+        """游戏结束，倒计时后重新开始"""
+        self.drawText("GAMEOVER %d" % Manager.over_time, 100, Manager.bg_size[1]/2, textHeight=50, fontColor=[255, 0, 0])
+
+    def game_over_timer(self):
+        """重开定时器"""
+        self.show_over_text()
+        Manager.over_time -= 1
+        if Manager.over_time == 0:
+            # 参数2改为0 定时器停止
+            pygame.time.set_timer(Manager.game_over_id, 0)
+            # 倒计时后重新开始
+            Manager.over_time = 3
+            Manager.is_game_over = False
+            self.start_game()
 
     def new_player(self):
         """创建飞机对象，添加到玩家的组"""
@@ -349,6 +381,10 @@ class Manager(object):
             self.map.draw()
             # 绘制文字
             self.drawText("HP:1000", 0, 0)
+            
+            if Manager.is_game_over:
+                # 判断游戏结束才显示结束文字
+                self.show_over_text()
 
             # 获取事件
             for event in pygame.event.get():
@@ -358,6 +394,9 @@ class Manager(object):
                 elif event.type == Manager.create_enemy_id:
                     # 创建一个敌机
                     self.new_enemy()
+                elif event.type == Manager.game_over_id:
+                    # 定时器触发的事件
+                    self.game_over_timer()
 
             # 调用爆炸的对象
             self.players_bomb.draw()
@@ -366,6 +405,8 @@ class Manager(object):
             # 判断碰撞
             iscollide = pygame.sprite.groupcollide(self.players, self.enemys, True, True)  # 接收玩家和敌机，都为True时将两个都消除
             if iscollide:
+                Manager.is_game_over = True  # 标志着游戏结束
+                pygame.time.set_timer(Manager.game_over_id, 1000)  # 开始游戏倒计时
                 items = list(iscollide.items())[0]
                 print(items)
                 x = items[0]
@@ -395,7 +436,7 @@ class Manager(object):
                 if isover:
                     Manager.is_game_over = True  # 标志游戏结束
                     pygame.time.set_timer(Manager.game_over_id, 1000)  # 开始游戏倒计时
-                    print("Be killed")
+                    print("You are killed")
                     self.players_bomb.action(self.players.sprites()[0].rect)
                     # 把玩家飞机从精灵组移除
                     self.players.remove(self.players.sprites()[0])
