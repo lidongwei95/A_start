@@ -6,7 +6,8 @@ from pygame.constants import *
 import time
 
 
-image_path = "/home/dongweili/Pictures/"
+image_path = "./data/images/"
+music_path = "./data/music/"
 
 
 class EnemyPlane(pygame.sprite.Sprite):
@@ -179,10 +180,10 @@ class EnemyBullet(pygame.sprite.Sprite):
 class GameSound(object):
     def __init__(self) -> None:
         pygame.mixer.init() # 音乐模块初始化
-        pygame.mixer.music.load(image_path + "sound.ogg") # 加载音乐
+        pygame.mixer.music.load(music_path + "sound.ogg") # 加载音乐
         pygame.mixer.music.set_volume(0.5)  # 设置音量
 
-        self.__bomb = pygame.mixer.Sound(image_path + "bomb.wav") 
+        self.__bomb = pygame.mixer.Sound(music_path + "bomb.wav") 
 
     def playBackgroundMusic(self):
         pygame.mixer.music.play(-1)  # 开始播放音乐  -1无限循环   2两遍
